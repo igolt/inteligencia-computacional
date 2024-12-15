@@ -21,3 +21,5 @@ AlignConsecutiveAssignments:
   Enabled: true
   AcrossEmptyLines: true
   AcrossComments: false
+IncludeBlocks: Regroup
+SeparateDefinitionBlocks: Always
