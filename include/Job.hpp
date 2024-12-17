@@ -9,17 +9,17 @@ private:
     int _processingTime;
 
 public:
-    Job(int label);
+    Job(int label, int family, int dueDate, int processingTime);
 
     int label() const;
     int family() const;
     int dueDate() const;
     int processingTime() const;
 
-    void setLabel(int label);
-    void setFamily(int family);
-    void setDueDate(int dueDate);
-    void setProcessingTime(int processingTime);
+    Job& setLabel(int label);
+    Job& setFamily(int family);
+    Job& setDueDate(int dueDate);
+    Job& setProcessingTime(int processingTime);
 };
 
 #endif /* JOB_HPP */

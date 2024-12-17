@@ -2,7 +2,10 @@
 #define SOLUTION_HPP
 
 class Solution {
-private:
+    private:
+    // Contém o completion time
+    // Contém o completion time de cada job inserido
+    // Contém Lmax
 public:
 };
 
