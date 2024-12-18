@@ -7,6 +7,13 @@
 
 // REFACTOR(igolt): isso aqui não tá muito bem representado
 class Solution {
+public:
+    // Initial Solution Algorithms Enum
+    enum class InitialSolution {
+        EDD, // Earliest Due Date
+        ML,  // Maximum Lateness
+    };
+
 private:
     int _completionTime;
     std::vector<int> _completionTimes;
@@ -17,7 +24,8 @@ private:
     void addJob(const Job& j, const Instance& instance);
 
 public:
-    static Solution generateInitialSolution(const Instance& instance);
+    static Solution generateInitialSolution(const Instance& instance,
+                                            InitialSolution algo);
 
     int completionTime() const;
     const std::vector<int>& completionTimes() const;

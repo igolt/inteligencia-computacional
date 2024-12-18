@@ -1,10 +1,14 @@
 #include <Solution.hpp>
 #include <climits>
+#include <functional>
 #include <list>
+#include <stdexcept>
 
-using CandidateList = std::list<const Job *>;
+using CandidateList  = std::list<const Job *>;
+using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
+using IS             = Solution::InitialSolution;
 
-inline CandidateList candidateListFromInstance(const Instance& instance)
+static inline CandidateList candidateListFromInstance(const Instance& instance)
 {
     CandidateList cl;
     cl.resize(instance.jobs().size());
@@ -16,7 +20,7 @@ inline CandidateList candidateListFromInstance(const Instance& instance)
     return cl;
 }
 
-CandidateList::iterator selectCandidateMaxLateness(CandidateList& cl)
+static CandidateList::iterator selectCandidateMaxLateness(CandidateList& cl)
 {
     auto jobIt              = cl.begin();
     auto jobWithMaxLateness = jobIt;
@@ -32,23 +36,7 @@ CandidateList::iterator selectCandidateMaxLateness(CandidateList& cl)
     return jobWithMaxLateness;
 }
 
-CandidateList::iterator selectCandidateMinLateness(CandidateList& cl)
-{
-    auto jobIt              = cl.begin();
-    auto jobWithMinLateness = jobIt;
-    int minLateness         = (*jobWithMinLateness)->processingTime() -
-                      (*jobWithMinLateness)->dueDate();
-    for (++jobIt; jobIt != cl.end(); ++jobIt) {
-        int jobLateness = (*jobIt)->processingTime() - (*jobIt)->dueDate();
-        if (jobLateness < minLateness) {
-            minLateness        = jobLateness;
-            jobWithMinLateness = jobIt;
-        }
-    }
-    return jobWithMinLateness;
-}
-
-CandidateList::iterator selectCandidateEDD(CandidateList& cl)
+static CandidateList::iterator selectCandidateEarlistDueDate(CandidateList& cl)
 {
     auto jobIt      = cl.begin();
     auto jobWithEDD = jobIt;
@@ -62,7 +50,20 @@ CandidateList::iterator selectCandidateEDD(CandidateList& cl)
     return jobWithEDD;
 }
 
-Solution Solution::generateInitialSolution(const Instance& instance)
+static SelectFunction getSelectCandidate(IS algo)
+{
+    switch (algo) {
+    case IS::EDD:
+        return selectCandidateEarlistDueDate;
+    case IS::ML:
+        return selectCandidateMaxLateness;
+    }
+    throw std::invalid_argument("invalid initial solution algorithm argument");
+}
+
+Solution Solution::generateInitialSolution(
+    const Instance& instance,
+    Solution::InitialSolution initalSoluationAlgorithm)
 {
     // REFACTOR(igolt): isso aqui com certeza tem como melhorar em todos os
     // aspectos
@@ -74,12 +75,14 @@ Solution Solution::generateInitialSolution(const Instance& instance)
     s._maxLatenessJobLabel = 0;
     s._jobSequence.reserve(instance.jobs().size());
 
-    // PERF(igolt): lista de candidatos pode ser uma estrutura que permita achar
-    // o maior de forma mais eficiente
+    auto selectCandidate = getSelectCandidate(initalSoluationAlgorithm);
+
+    // PERF(igolt): lista de candidatos pode ser uma estrutura que permita
+    // achar o maior de forma mais eficiente
     auto candidateList = candidateListFromInstance(instance);
 
     while (!candidateList.empty()) {
-        auto candidate = selectCandidateMaxLateness(candidateList);
+        auto candidate = selectCandidate(candidateList);
         s.addJob(**candidate, instance);
         candidateList.erase(candidate);
     }
