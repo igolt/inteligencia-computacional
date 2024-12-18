@@ -1,4 +1,5 @@
 #include "Instance.hpp"
+#include "Solution.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -13,6 +14,18 @@ int main(int argc, const char *argv[])
         std::cerr << "usage: " << progName << " FILE\n";
         return 1;
     }
-    std::cout << Instance::fromFile(argv[1]) << '\n';
+    Instance instance = Instance::fromFile(argv[1]);
+    Solution solution = Solution::generateInitialSolution(instance);
+
+    std::cout << instance << '\n';
+    for (const Job *j : solution.jobSequence()) {
+        std::cout << j->label() << '\n';
+    }
+    std::cout << "max lateness: " << solution.maxLateness() << "\n";
+    std::cout << "max lateness job: " << solution.maxLatenessJobLabel() << "\n";
+    std::cout << "completion time: "
+              << solution.completionTimes()[solution.maxLatenessJobLabel() - 1]
+              << "\n";
+
     return 0;
 }
