@@ -26,7 +26,7 @@ private:
 public:
     static Solution generateInitialSolution(const Instance& instance,
                                             InitialSolution algo);
-
+    Solution swap(unsigned a, unsigned b, const Instance& instance);
     int completionTime() const;
     const std::vector<int>& completionTimes() const;
     int maxLateness() const;
