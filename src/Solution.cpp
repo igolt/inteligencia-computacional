@@ -3,7 +3,6 @@
 #include <functional>
 #include <list>
 #include <stdexcept>
-#include <iostream>
 
 using CandidateList  = std::list<const Job *>;
 using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
