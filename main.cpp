@@ -1,6 +1,6 @@
+#include "Algorithm.hpp"
 #include "Instance.hpp"
 #include "Solution.hpp"
-#include "Algorithm.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -51,15 +51,6 @@ static void avaliateSolutionForInstanceFile(const char *fileName,
     Instance instance              = Instance::fromFile(fileName);
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
     Solution solution = Solution::generateInitialSolution(instance, algo);
-
-    /*for (const Job *j : solution.jobSequence()) {
-        std::cout << j->label() << '\n';
-    }
-    std::cout << "max lateness: " << solution.maxLateness() << "\n";
-    std::cout << "max lateness job: " << solution.maxLatenessJobLabel() << "\n";
-    std::cout << "completion time: "
-              << solution.completionTimes()[solution.maxLatenessJobLabel() - 1]
-              << "\n";*/
 
     Algorithm algorithm;
     Solution solution2 = algorithm.run(solution, 1000, instance, true);
