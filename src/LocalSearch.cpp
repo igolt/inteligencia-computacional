@@ -1,4 +1,4 @@
-#include "Algorithm.hpp"
+#include "LocalSearch.hpp"
 
 #include "Solution.hpp"
 
@@ -6,9 +6,12 @@
 #include <iostream>
 #include <vector>
 
-long long Algorithm::executionTime() const { return this->_executionTime; };
+long long LocalSearch::executionTimeMS() const
+{
+    return this->_executionTimeMS;
+};
 
-Solution Algorithm::bestNeighbor(Solution& s, const Instance& instance)
+Solution LocalSearch::bestNeighbor(Solution& s, const Instance& instance)
 {
     unsigned sz    = s.jobSequence().size();
     Solution bestN = s.swap(0, 1, instance);
@@ -24,8 +27,8 @@ Solution Algorithm::bestNeighbor(Solution& s, const Instance& instance)
     return bestN;
 }
 
-Solution Algorithm::run(Solution& initialSolution, unsigned timeLimit,
-                        const Instance& instance, bool enableLogging)
+Solution LocalSearch::run(Solution& initialSolution, unsigned timeLimit,
+                          const Instance& instance, bool enableLogging)
 {
     bool improve   = true;
     bool timeout   = false;
@@ -34,7 +37,7 @@ Solution Algorithm::run(Solution& initialSolution, unsigned timeLimit,
     auto start = std::chrono::steady_clock::now();
     while (improve && !timeout) {
         if (enableLogging)
-            std::cout << "Max Lateness: " << bestS.maxLateness() << "\n";
+            std::cerr << "Max Lateness: " << bestS.maxLateness() << "\n";
         improve = false;
         bestN   = bestNeighbor(bestS, instance);
         if (bestS.maxLateness() > bestN.maxLateness()) {
@@ -45,15 +48,11 @@ Solution Algorithm::run(Solution& initialSolution, unsigned timeLimit,
                       std::chrono::steady_clock::now() - start)
                       .count() >= timeLimit;
         if (timeout && enableLogging)
-            std::cout << "Timeout!" << "\n";
+            std::cerr << "Timeout!" << "\n";
     }
-    this->_executionTime =
+    this->_executionTimeMS =
         std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start)
             .count();
-    if (enableLogging) {
-        std::cout << "Execution Time: " << this->_executionTime
-                  << " milliseconds\n";
-    }
     return bestS;
 };

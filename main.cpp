@@ -1,5 +1,5 @@
-#include "Algorithm.hpp"
 #include "Instance.hpp"
+#include "LocalSearch.hpp"
 #include "Solution.hpp"
 
 #include <cctype>
@@ -10,27 +10,50 @@
 #include <stdexcept>
 #include <string>
 
+#define DEFAULT_TIMEOUT 1000u
+
+inline unsigned timeoutMSFromArgs(int argc, const char *argv[]);
+
 Solution::InitialSolution getInitalSolutionAlgo(const char *algoName);
 
 static void avaliateSolutionForInstanceFile(const char *fileName,
-                                            const char *algoName);
+                                            const char *algoName,
+                                            unsigned timoeutMS);
 
 int main(int argc, const char *argv[])
 {
     const char *progName = argv[0];
 
-    if (argc < 2 || argc > 3) {
-        std::cerr << "usage: " << progName << " FILE [INITIAL_SOLUTION_ALGO]\n";
+    if (argc < 2 || argc > 4) {
+        std::cerr << "usage: " << progName
+                  << " FILE [INITIAL_SOLUTION_ALGO] [TIMEOUT_MS]\n";
         return 1;
     }
 
+    const char *initalSolutionAlgorithm = argc >= 3 ? argv[2] : "ML";
+    unsigned int timeoutMS              = timeoutMSFromArgs(argc, argv);
+
     try {
-        avaliateSolutionForInstanceFile(argv[1], argc == 3 ? argv[2] : "ML");
+        avaliateSolutionForInstanceFile(argv[1], initalSolutionAlgorithm,
+                                        timeoutMS);
     } catch (std::exception& e) {
         std::cerr << progName << ": " << e.what() << '\n';
         return 2;
     }
     return 0;
+}
+
+inline unsigned timeoutMSFromArgs(int argc, const char *argv[])
+{
+    if (argc >= 4) {
+        try {
+            return std::stoul(argv[3]);
+        } catch (std::exception& _) {
+            std::cerr << "invalid value for timeout: " << argv[3] << '\n';
+            std::cerr << "defaulting to " << DEFAULT_TIMEOUT << '\n';
+        }
+    }
+    return DEFAULT_TIMEOUT;
 }
 
 Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
@@ -46,12 +69,16 @@ Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
 }
 
 static void avaliateSolutionForInstanceFile(const char *fileName,
-                                            const char *algoName)
+                                            const char *algoName,
+                                            unsigned timeoutMS)
 {
     Instance instance              = Instance::fromFile(fileName);
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
     Solution solution = Solution::generateInitialSolution(instance, algo);
 
-    Algorithm algorithm;
-    Solution solution2 = algorithm.run(solution, 1000, instance, true);
+    LocalSearch localSearch;
+    localSearch.run(solution, timeoutMS, instance, true);
+
+    std::cout << "Execution Time: " << localSearch.executionTimeMS()
+              << " milliseconds\n";
 }

@@ -3,15 +3,15 @@
 
 #include "Solution.hpp"
 
-class Algorithm {
+class LocalSearch {
 private:
-    long long _executionTime;
+    long long _executionTimeMS;
     Solution bestNeighbor(Solution& s, const Instance& instance);
 
 public:
     Solution run(Solution& initialSolution, unsigned timeLimit,
                  const Instance& instance, bool enableLogging);
-    long long executionTime() const;
+    long long executionTimeMS() const;
 };
 
 #endif /* ALGORITHM_HPP */
