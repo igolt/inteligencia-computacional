@@ -42,7 +42,7 @@ int main(int argc, const char *argv[])
             avaliateSolutionForInstanceFile(argv[3], initalSolutionAlgorithm,
                                             timeoutMS);
         } else {
-            benchmark(argv[1], &argv[2], argc - 2);
+            benchmark(argv[1], &argv[3], argc - 3);
         }
     } catch (std::exception& e) {
         std::cerr << progName << ": " << e.what() << '\n';
@@ -105,8 +105,7 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
 
     csv << "File;Number of jobs;Numer of families;Setup Class;Setup "
            "Times;Distance "
-           "Index;Lateness;Jobs order;Jobs families; Jobs Processing Time; "
-           "Execution Time\n";
+           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs families;Jobs Processing Time;Execution Time\n";
 
     LocalSearch algorithm;
     for (int i = 0; i < listSize; i++) {
@@ -124,6 +123,7 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
         Solution finalSolution =
             algorithm.run(initialSolution, 1000, instance, false);
 
+        csv << initialSolution.maxLateness() << ";";
         csv << finalSolution.maxLateness() << ";";
 
         csv << "[";
