@@ -16,6 +16,7 @@ private:
     JobList _jobs;
     std::vector<int> _s;
     unsigned _numberOfFamilies;
+    char _setupTimeClass;
 
 public:
     static Instance fromFile(const std::string& fileName);
@@ -26,6 +27,7 @@ public:
     int s(int i, int j) const;
 
     std::ostream& print(std::ostream& os) const;
+    std::ostream& toCsv(std::ostream& csv) const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Instance& i)
