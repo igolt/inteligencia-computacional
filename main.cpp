@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -16,26 +17,33 @@ inline unsigned timeoutMSFromArgs(int argc, const char *argv[]);
 
 Solution::InitialSolution getInitalSolutionAlgo(const char *algoName);
 
-static void avaliateSolutionForInstanceFile(const char *fileName,
-                                            const char *algoName,
-                                            unsigned timoeutMS);
+static Solution avaliateSolutionForInstanceFile(const char *fileName,
+                                                const char *algoName,
+                                                unsigned timoeutMS);
+
+static void benchmark(const char *algoName, const char **fileList,
+                      int listSize);
 
 int main(int argc, const char *argv[])
 {
     const char *progName = argv[0];
 
-    if (argc < 2 || argc > 4) {
+    if (argc < 4) {
         std::cerr << "usage: " << progName
-                  << " FILE [INITIAL_SOLUTION_ALGO] [TIMEOUT_MS]\n";
+                  << " INITIAL_SOLUTION_ALGO TIMEOUT_MS FILE[S]\n";
         return 1;
     }
 
-    const char *initalSolutionAlgorithm = argc >= 3 ? argv[2] : "ML";
+    const char *initalSolutionAlgorithm = argv[1];
     unsigned int timeoutMS              = timeoutMSFromArgs(argc, argv);
 
     try {
-        avaliateSolutionForInstanceFile(argv[1], initalSolutionAlgorithm,
-                                        timeoutMS);
+        if (argc == 4) {
+            avaliateSolutionForInstanceFile(argv[3], initalSolutionAlgorithm,
+                                            timeoutMS);
+        } else {
+            benchmark(argv[1], &argv[2], argc - 2);
+        }
     } catch (std::exception& e) {
         std::cerr << progName << ": " << e.what() << '\n';
         return 2;
@@ -68,9 +76,9 @@ Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
         "'");
 }
 
-static void avaliateSolutionForInstanceFile(const char *fileName,
-                                            const char *algoName,
-                                            unsigned timeoutMS)
+static Solution avaliateSolutionForInstanceFile(const char *fileName,
+                                                const char *algoName,
+                                                unsigned timeoutMS)
 {
     Instance instance              = Instance::fromFile(fileName);
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
@@ -81,4 +89,61 @@ static void avaliateSolutionForInstanceFile(const char *fileName,
 
     std::cout << "Execution Time: " << localSearch.executionTimeMS()
               << " milliseconds\n";
+    LocalSearch algorithm;
+    return algorithm.run(solution, 1000, instance, true);
+}
+
+static void benchmark(const char *algoName, const char **fileList, int listSize)
+{
+    std::ofstream csv;
+    csv.open("output.csv");
+
+    if (!csv.is_open()) {
+        std::cerr << "Failed to open file 'output.csv'." << std::endl;
+        return;
+    }
+
+    csv << "File;Number of jobs;Numer of families;Setup Class;Setup "
+           "Times;Distance "
+           "Index;Lateness;Jobs order;Jobs families; Jobs Processing Time; "
+           "Execution Time\n";
+
+    LocalSearch algorithm;
+    for (int i = 0; i < listSize; i++) {
+        Instance instance              = Instance::fromFile(fileList[i]);
+        Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
+        Solution initialSolution =
+            Solution::generateInitialSolution(instance, algo);
+
+        std::cout << i + 1 << "/" << listSize << ": " << fileList[i]
+                  << std::endl;
+
+        csv << fileList[i] << ";";
+        instance.toCsv(csv);
+
+        Solution finalSolution =
+            algorithm.run(initialSolution, 1000, instance, false);
+
+        csv << finalSolution.maxLateness() << ";";
+
+        csv << "[";
+        for (const Job *j : finalSolution.jobSequence()) {
+            csv << j->label() << ',';
+        }
+        csv << "];";
+
+        csv << "[";
+        for (const Job *j : finalSolution.jobSequence()) {
+            csv << j->family() << ',';
+        }
+        csv << "];";
+
+        csv << "[";
+        for (const Job *j : finalSolution.jobSequence()) {
+            csv << j->processingTime() << ',';
+        }
+        csv << "];" << algorithm.executionTimeMS() << "\n";
+    }
+
+    csv.close();
 }

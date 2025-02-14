@@ -46,6 +46,7 @@ Instance Instance::fromFile(std::istream& is)
         instance._jobs.push_back(Job(i + 1, rr.f[i], rr.d[i], rr.p[i]));
     }
     instance._numberOfFamilies = rr.numberOfFamilies;
+    instance._setupTimeClass   = rr.setupTimeClass;
     instance._s                = std::move(rr.s);
     return instance;
 }
@@ -191,4 +192,17 @@ std::ostream& Instance::print(std::ostream& os) const
            << ",processingTime=" << j.processingTime() << ")\n";
     }
     return os;
+}
+
+/*
+   csv << "File,Number of jobs,Numer of families,Setup Class,Setup "
+           "Times,Distance "
+           "Index,Lateness,Jobs order,Jobs families, Execution Time\n";
+*/
+std::ostream& Instance::toCsv(std::ostream& csv) const
+{
+    csv << this->jobs().size() << ";" << this->_numberOfFamilies << ";"
+        << this->_setupTimeClass << ";" << this->_s << ";"
+        << "(distance idx);";
+    return csv;
 }
