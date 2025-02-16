@@ -1,64 +1,92 @@
+#include "Instance.hpp"
+#include "Job.hpp"
+
 #include <Solution.hpp>
+#include <algorithm>
 #include <climits>
 #include <functional>
 #include <list>
-#include <stdexcept>
+#include <vector>
 
 using CandidateList  = std::list<const Job *>;
 using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
 using IS             = Solution::InitialSolution;
 
-static inline CandidateList candidateListFromInstance(const Instance& instance)
+void Solution::sortEarliestDueDate(const Instance& instance)
 {
-    CandidateList cl;
-    cl.resize(instance.jobs().size());
-    auto jobIt = instance.jobs().begin();
-    for (auto candidateIt = cl.begin(); candidateIt != cl.end();
-         ++candidateIt, ++jobIt) {
-        *candidateIt = &*jobIt;
+    for (const auto& job : instance.jobs()) {
+        _jobSequence.push_back(&job);
     }
-    return cl;
-}
+    // todo: testar o sort com a heuristica antiga (process time - due date)
+    std::stable_sort(
+        _jobSequence.begin(), _jobSequence.end(),
+        [](const Job *a, const Job *b) { return a->dueDate() < b->dueDate(); });
 
-static CandidateList::iterator selectCandidateMaxLateness(CandidateList& cl)
-{
-    auto jobIt              = cl.begin();
-    auto jobWithMaxLateness = jobIt;
-    int maxLateness         = (*jobWithMaxLateness)->processingTime() -
-                      (*jobWithMaxLateness)->dueDate();
-    for (++jobIt; jobIt != cl.end(); ++jobIt) {
-        int jobLateness = (*jobIt)->processingTime() - (*jobIt)->dueDate();
-        if (jobLateness > maxLateness) {
-            maxLateness        = jobLateness;
-            jobWithMaxLateness = jobIt;
+    int accTime    = 0;
+    int lastFamily = -1;
+    _maxLateness   = INT_MIN;
+
+    for (const auto& job : _jobSequence) {
+        int setup =
+            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
+        lastFamily = job->family();
+        accTime += setup + job->processingTime();
+        _completionTimes[job->label() - 1] = accTime;
+
+        int lateness                       = accTime - job->dueDate();
+        if (lateness > _maxLateness) {
+            _maxLateness         = lateness;
+            _maxLatenessJobLabel = job->label();
         }
     }
-    return jobWithMaxLateness;
+
+    _completionTime = accTime;
 }
 
-static CandidateList::iterator selectCandidateEarlistDueDate(CandidateList& cl)
+void Solution::sortMaxLateness(const Instance& instance)
 {
-    auto jobIt      = cl.begin();
-    auto jobWithEDD = jobIt;
-    int edd         = (*jobWithEDD)->dueDate();
-    for (++jobIt; jobIt != cl.end(); ++jobIt) {
-        if ((*jobIt)->dueDate() < edd) {
-            edd        = (*jobIt)->dueDate();
-            jobWithEDD = jobIt;
+    int accTime    = 0;
+    int lastFamily = -1;
+    int lateness, setup, maxLateness, latestSetup;
+
+    CandidateList candidates;
+    for (const auto& job : instance.jobs()) {
+        candidates.push_back(&job);
+    }
+
+    while (!candidates.empty()) {
+        auto latestIt = candidates.begin();
+        maxLateness   = INT_MIN;
+        latestSetup   = 0;
+
+        for (auto it = candidates.begin(); it != candidates.end(); ++it) {
+            const Job *job = *it;
+            setup = lastFamily < 0 ? 0 : instance.s(lastFamily, job->family());
+            lateness = accTime + setup + job->processingTime() - job->dueDate();
+
+            if (lateness > maxLateness) {
+                latestIt    = it;
+                maxLateness = lateness;
+                latestSetup = setup;
+            }
+        }
+
+        const Job *latestJob = *latestIt;
+
+        accTime += latestJob->processingTime() + latestSetup;
+        candidates.erase(latestIt);
+        _jobSequence.push_back(latestJob);
+
+        lastFamily                               = latestJob->family();
+        _completionTimes[latestJob->label() - 1] = accTime;
+
+        if (maxLateness > _maxLateness) {
+            _maxLateness         = maxLateness;
+            _maxLatenessJobLabel = latestJob->label();
         }
     }
-    return jobWithEDD;
-}
 
-static SelectFunction getSelectCandidate(IS algo)
-{
-    switch (algo) {
-    case IS::EDD:
-        return selectCandidateEarlistDueDate;
-    case IS::ML:
-        return selectCandidateMaxLateness;
-    }
-    throw std::invalid_argument("invalid initial solution algorithm argument");
+    _completionTime = accTime;
 }
 
 Solution Solution::generateInitialSolution(
@@ -75,16 +103,13 @@ Solution Solution::generateInitialSolution(
     s._maxLatenessJobLabel = 0;
     s._jobSequence.reserve(instance.jobs().size());
 
-    auto selectCandidate = getSelectCandidate(initalSoluationAlgorithm);
-
-    // PERF(igolt): lista de candidatos pode ser uma estrutura que permita
-    // achar o maior de forma mais eficiente
-    auto candidateList = candidateListFromInstance(instance);
-
-    while (!candidateList.empty()) {
-        auto candidate = selectCandidate(candidateList);
-        s.addJob(**candidate, instance);
-        candidateList.erase(candidate);
+    switch (initalSoluationAlgorithm) {
+    case IS::EDD:
+        s.sortEarliestDueDate(instance);
+        break;
+    case IS::ML:
+        s.sortMaxLateness(instance);
+        break;
     }
     return s;
 }
