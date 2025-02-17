@@ -55,9 +55,9 @@ inline unsigned timeoutMSFromArgs(int argc, const char *argv[])
 {
     if (argc >= 4) {
         try {
-            return std::stoul(argv[3]);
+            return std::stoul(argv[2]);
         } catch (std::exception& _) {
-            std::cerr << "invalid value for timeout: " << argv[3] << '\n';
+            std::cerr << "invalid value for timeout: " << argv[2] << '\n';
             std::cerr << "defaulting to " << DEFAULT_TIMEOUT << '\n';
         }
     }
@@ -85,12 +85,10 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
     Solution solution = Solution::generateInitialSolution(instance, algo);
 
     LocalSearch localSearch;
-    localSearch.run(solution, timeoutMS, instance, true);
-
+    Solution s = localSearch.run(solution, timeoutMS, instance, true);
     std::cout << "Execution Time: " << localSearch.executionTimeMS()
               << " milliseconds\n";
-    LocalSearch algorithm;
-    return algorithm.run(solution, 1000, instance, true);
+    return s;
 }
 
 static void benchmark(const char *algoName, const char **fileList, int listSize)
@@ -105,7 +103,8 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
 
     csv << "File;Number of jobs;Numer of families;Setup Class;Setup "
            "Times;Distance "
-           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs families;Jobs Processing Time;Execution Time\n";
+           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs "
+           "families;Jobs Processing Time;Execution Time\n";
 
     LocalSearch algorithm;
     for (int i = 0; i < listSize; i++) {

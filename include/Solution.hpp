@@ -22,6 +22,8 @@ private:
     std::vector<const Job *> _jobSequence;
 
     void addJob(const Job& j, const Instance& instance);
+    void sortEarliestDueDate(const Instance& instance);
+    void sortMaxLateness(const Instance& instance);
 
 public:
     static Solution generateInitialSolution(const Instance& instance,
