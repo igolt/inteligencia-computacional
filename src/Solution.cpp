@@ -17,7 +17,6 @@ void Solution::sortEarliestDueDate(const Instance& instance)
     for (const auto& job : instance.jobs()) {
         _jobSequence.push_back(&job);
     }
-    // todo: testar o sort com a heuristica antiga (process time - due date)
     std::stable_sort(
         _jobSequence.begin(), _jobSequence.end(),
         [](const Job *a, const Job *b) { return a->dueDate() < b->dueDate(); });
@@ -93,8 +92,6 @@ Solution Solution::generateInitialSolution(
     const Instance& instance,
     Solution::InitialSolution initalSoluationAlgorithm)
 {
-    // REFACTOR(igolt): isso aqui com certeza tem como melhorar em todos os
-    // aspectos
     Solution s;
 
     s._completionTime = 0;
