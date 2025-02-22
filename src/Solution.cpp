@@ -12,6 +12,32 @@ using CandidateList  = std::list<const Job *>;
 using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
 using IS             = Solution::InitialSolution;
 
+// TODO(paulo-rozatto): codigo de lateness esta duplicado em varios lugares
+Solution::Solution(std::vector<const Job *> jobs, const Instance& instance)
+    : _jobSequence(jobs)
+{
+    _completionTime = 0;
+    _completionTimes.clear();
+    _maxLateness         = 0;
+    _maxLatenessJobLabel = -1;
+
+    int lastFamily       = 0;
+    for (const Job *job : jobs) {
+        int setup =
+            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
+
+        _completionTime += job->processingTime() + setup;
+        _completionTimes.push_back(_completionTime);
+        lastFamily   = job->family();
+
+        int lateness = _completionTime - job->dueDate();
+        if (lateness > _maxLateness) {
+            _maxLateness         = lateness;
+            _maxLatenessJobLabel = job->label();
+        }
+    }
+}
+
 void Solution::sortEarliestDueDate(const Instance& instance)
 {
     for (const auto& job : instance.jobs()) {
