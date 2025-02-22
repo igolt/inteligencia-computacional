@@ -168,7 +168,7 @@ const Instance::JobList& Instance::jobs() const { return this->_jobs; }
 
 int Instance::s(int i, int j) const
 {
-    return this->_s[i / this->_numberOfFamilies + j];
+    return this->_s[(i - 1) * this->_numberOfFamilies + (j - 1)];
 }
 
 std::ostream& operator<<(std::ostream& os, const IntList& v)

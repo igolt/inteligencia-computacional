@@ -26,6 +26,10 @@ private:
     void sortMaxLateness(const Instance& instance);
 
 public:
+    Solution() {}
+
+    Solution(std::vector<const Job *> jobs, const Instance& instance);
+
     static Solution generateInitialSolution(const Instance& instance,
                                             InitialSolution algo);
     Solution swap(unsigned a, unsigned b, const Instance& instance);

@@ -1,5 +1,6 @@
 #include "Instance.hpp"
 #include "LocalSearch.hpp"
+#include "SimulatedAnnealing.hpp"
 #include "Solution.hpp"
 
 #include <cctype>
@@ -84,9 +85,13 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
     Solution solution = Solution::generateInitialSolution(instance, algo);
 
-    LocalSearch localSearch;
-    Solution s = localSearch.run(solution, timeoutMS, instance, true);
-    std::cout << "Execution Time: " << localSearch.executionTimeMS()
+    // LocalSearch localSearch;
+    // Solution s = localSearch.run(solution, timeoutMS, instance, true);
+    // TODO (paulo-rozatto): polimorfismo de algoritmos
+    SimulatedAnnealing sa;
+    Solution s = sa.run(solution, timeoutMS, instance, true);
+
+    std::cout << "Execution Time: " << sa.executionTimeMS()
               << " milliseconds\n";
     return s;
 }
@@ -106,7 +111,8 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
            "Index;Initial Lateness;Final Lateness;Jobs order;Jobs "
            "families;Jobs Processing Time;Execution Time\n";
 
-    LocalSearch algorithm;
+    // TODO (paulo-rozatto): polimorfismo de algoritmos
+    SimulatedAnnealing algorithm;
     for (int i = 0; i < listSize; i++) {
         Instance instance              = Instance::fromFile(fileList[i]);
         Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
