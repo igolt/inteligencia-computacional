@@ -2,7 +2,6 @@
 
 #include "Instance.hpp"
 #include "Job.hpp"
-#include "JobComposed.hpp"
 #include "Solution.hpp"
 
 #include <chrono>
@@ -11,60 +10,31 @@
 #include <cstddef>
 #include <iostream>
 #include <math.h>
-#include <memory>
 #include <random>
 #include <vector>
 
-int calculateMaxLateness(const std::vector<const Job *>& jobs,
-                         const Instance& instance)
+#define MAX_RAND_ATTEMPTS 1000
+
+bool badSwap(int i, int j, int maxJobIndex, std::vector<const Job *>& reduced)
 {
-    int currentTime = 0;
-    int maxLateness = INT_MIN;
-    int lastFamily  = -1;
+    if (reduced.at(i)->family() == reduced.at(j)->family() &&
+        reduced.at(i)->dueDate() < reduced.at(j)->dueDate())
+        return true;
 
-    for (const auto& job : jobs) {
-        int setup =
-            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
-        currentTime += job->processingTime() + setup;
-        int lateness = currentTime - job->dueDate();
-        lastFamily   = job->family();
+    // theorem 3: m2
+    if (i == maxJobIndex && j > i)
+        return true;
 
-        if (lateness > maxLateness) {
-            maxLateness = lateness;
-        }
-    }
-
-    return maxLateness;
+    return false;
 }
 
-// TODO (paulo-rozatto): Testa vizinhacas promissoras ao inves de aleatorio
-void randomSwap(std::vector<std::unique_ptr<Job>>& jobs)
+void groupJobs(const std::vector<const Job *>& init,
+               std::vector<const Job *>& reduced)
 {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> dist(0, jobs.size() - 1);
-
-    size_t i = dist(gen);
-    size_t j = dist(gen);
-    while (i == j) {
-        j = dist(gen);
-    }
-
-    std::swap(jobs[i], jobs[j]);
-}
-
-Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
-                                 const Instance& instance, bool enableLogging)
-{
-    std::vector<const Job *> init = initialSolution.jobSequence();
-    std::vector<const Job *> reduced;
-    reduced.reserve(init.size());
-
     // Agrupando todos jobs sequencias segundo o Teorema 4 repetidamente
     // Teorema 4: Se jobs i e j sao sequenciais e o jobs estao ordenados em EDD
     // Pode se agrupar repetitivamente i e j se d_j < d_i + p_j;
     // https://doi.org/10.1016/S0167-6377(97)00028-X
-    auto start = std::chrono::steady_clock::now();
 
     for (size_t i = 0; i < init.size(); i++) {
         Job *job = new Job(init[i]->label(), init[i]->family(),
@@ -86,34 +56,84 @@ Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
 
         reduced.push_back(job);
     }
+}
+
+void copy(const std::vector<const Job *>& src, std::vector<const Job *>& dst)
+{
+    dst.clear();
+    for (const auto& job : src) {
+        dst.push_back(job);
+    }
+}
+
+Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
+                                 const Instance& instance, bool enableLogging)
+{
+    std::vector<const Job *> init = initialSolution.jobSequence();
+    std::vector<const Job *> reduced, best;
+    reduced.reserve(init.size());
+
+    auto start = std::chrono::steady_clock::now();
+
+    groupJobs(init, reduced);
+    best.reserve(reduced.size());
+    copy(reduced, best);
 
     const int minTemperature = 1;
-    int currentMaxLatness    = calculateMaxLateness(reduced, instance);
-    int temperature          = 100;
+    std::pair<int, int> pair =
+        Instance::calculateMaxLateness(reduced, instance);
+
+    int latestJobIndex     = pair.first;
+    int bestMaxLateness    = pair.second;
+    int currentMaxLateness = pair.second;
+    double temperature     = 10000;
 
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<size_t> dist(0, reduced.size() - 1);
 
     bool timeout = false;
 
-    while (temperature > minTemperature) {
+    while (temperature > minTemperature && latestJobIndex > 0 && !timeout) {
 
-        size_t i = dist(gen);
-        size_t j = dist(gen);
-        while (i == j) {
-            j = dist(gen);
-        }
+        for (int k = 0; k < 100; k++) {
 
-        std::swap(reduced[i], reduced[j]);
-        int newMaxLateness = calculateMaxLateness(reduced, instance);
-        int delta          = newMaxLateness - currentMaxLatness;
+            std::uniform_int_distribution<size_t> dist(0, latestJobIndex);
+            size_t i         = dist(gen);
+            size_t j         = dist(gen);
+            int randAttempts = 0;
 
-        if (delta < 0 || exp(-static_cast<double>(delta) / temperature) >
-                             (static_cast<double>(rand()) / RAND_MAX)) {
-            currentMaxLatness = newMaxLateness;
-        } else {
+            while (i == j || (randAttempts < MAX_RAND_ATTEMPTS &&
+                              badSwap(i, j, latestJobIndex, reduced))) {
+                j = dist(gen);
+                ++randAttempts;
+            }
+
             std::swap(reduced[i], reduced[j]);
+            std::pair<int, int> pair =
+                Instance::calculateMaxLateness(reduced, instance);
+
+            // latestJobIndex     = pair.first;
+            int newMaxLateness = pair.second;
+            double delta       = newMaxLateness - currentMaxLateness;
+
+            if (delta < 0) {
+                currentMaxLateness = newMaxLateness;
+            } else {
+                double prob     = exp(-delta / temperature);
+                double randPass = (static_cast<double>(rand()) / RAND_MAX);
+
+                if (prob >= randPass) {
+                    currentMaxLateness = newMaxLateness;
+                } else {
+                    std::swap(reduced[i], reduced[j]);
+                }
+            }
+
+            if (currentMaxLateness < bestMaxLateness) {
+                bestMaxLateness = currentMaxLateness;
+                copy(reduced, best);
+                break;
+            }
         }
 
         temperature *= 0.99;
@@ -130,7 +150,7 @@ Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
     if (timeout && enableLogging)
         std::cerr << "Timeout!" << "\n";
 
-    Solution s(reduced, instance);
+    Solution s(best, instance);
 
     return s;
 }

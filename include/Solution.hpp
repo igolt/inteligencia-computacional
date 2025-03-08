@@ -24,6 +24,7 @@ private:
     void addJob(const Job& j, const Instance& instance);
     void sortEarliestDueDate(const Instance& instance);
     void sortMaxLateness(const Instance& instance);
+    void calculateLateness(const Instance& instance);
 
 public:
     Solution() {}
