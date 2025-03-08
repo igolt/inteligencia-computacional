@@ -1,8 +1,10 @@
 #include "Instance.hpp"
 
+#include <climits>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 using IntList = std::vector<int>;
@@ -49,6 +51,33 @@ Instance Instance::fromFile(std::istream& is)
     instance._setupTimeClass   = rr.setupTimeClass;
     instance._s                = std::move(rr.s);
     return instance;
+}
+
+std::pair<int, int>
+Instance::calculateMaxLateness(const std::vector<const Job *>& jobs,
+                               const Instance& instance)
+{
+    int currentTime = 0;
+    int maxLateness = INT_MIN;
+    int lastFamily  = 0;
+    int setup, lateness;
+    int latestJobIndex;
+
+    int i = 0;
+    for (const auto& job : jobs) {
+        setup = instance.s(lastFamily, job->family());
+        currentTime += job->processingTime() + setup;
+        lateness   = currentTime - job->dueDate();
+        lastFamily = job->family();
+
+        if (lateness > maxLateness) {
+            maxLateness    = lateness;
+            latestJobIndex = i;
+        }
+        ++i;
+    }
+
+    return std::pair<int, int>(latestJobIndex, maxLateness);
 }
 
 template <typename T>
@@ -168,6 +197,8 @@ const Instance::JobList& Instance::jobs() const { return this->_jobs; }
 
 int Instance::s(int i, int j) const
 {
+    if (i <= 0)
+        return 0;
     return this->_s[(i - 1) * this->_numberOfFamilies + (j - 1)];
 }
 
@@ -202,7 +233,6 @@ std::ostream& Instance::print(std::ostream& os) const
 std::ostream& Instance::toCsv(std::ostream& csv) const
 {
     csv << this->jobs().size() << ";" << this->_numberOfFamilies << ";"
-        << this->_setupTimeClass << ";" << this->_s << ";"
-        << "(distance idx);";
+        << this->_setupTimeClass << ";" << this->_s << ";" << "(distance idx);";
     return csv;
 }

@@ -12,19 +12,22 @@ using CandidateList  = std::list<const Job *>;
 using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
 using IS             = Solution::InitialSolution;
 
-// TODO(paulo-rozatto): codigo de lateness esta duplicado em varios lugares
 Solution::Solution(std::vector<const Job *> jobs, const Instance& instance)
     : _jobSequence(jobs)
 {
+    this->calculateLateness(instance);
+}
+
+void Solution::calculateLateness(const Instance& instance)
+{
     _completionTime = 0;
     _completionTimes.clear();
-    _maxLateness         = 0;
+    _maxLateness         = INT_MIN;
     _maxLatenessJobLabel = -1;
 
     int lastFamily       = 0;
-    for (const Job *job : jobs) {
-        int setup =
-            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
+    for (const Job *job : _jobSequence) {
+        int setup = instance.s(lastFamily, job->family());
 
         _completionTime += job->processingTime() + setup;
         _completionTimes.push_back(_completionTime);
@@ -47,25 +50,7 @@ void Solution::sortEarliestDueDate(const Instance& instance)
         _jobSequence.begin(), _jobSequence.end(),
         [](const Job *a, const Job *b) { return a->dueDate() < b->dueDate(); });
 
-    int accTime    = 0;
-    int lastFamily = -1;
-    _maxLateness   = INT_MIN;
-
-    for (const auto& job : _jobSequence) {
-        int setup =
-            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
-        lastFamily = job->family();
-        accTime += setup + job->processingTime();
-        _completionTimes[job->label() - 1] = accTime;
-
-        int lateness                       = accTime - job->dueDate();
-        if (lateness > _maxLateness) {
-            _maxLateness         = lateness;
-            _maxLatenessJobLabel = job->label();
-        }
-    }
-
-    _completionTime = accTime;
+    this->calculateLateness(instance);
 }
 
 void Solution::sortMaxLateness(const Instance& instance)
