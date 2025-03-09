@@ -11,22 +11,14 @@ long long LocalSearch::executionTimeMS() const
     return this->_executionTimeMS;
 };
 
-static inline Solution cloneAndSwap(const Solution& s, unsigned idxA,
-                                    unsigned idxB, const Instance& instance)
-{
-    Solution newS = Solution(s);
-    newS.swap(idxA, idxB, instance);
-    return newS;
-}
-
 Solution LocalSearch::bestNeighbor(Solution& s, const Instance& instance)
 {
     unsigned sz    = s.jobSequence().size();
-    Solution bestN = cloneAndSwap(s, 0, 1, instance);
+    Solution bestN = s.swap(0, 1, instance);
 
     for (size_t i = 0; i < sz - 1; i++) {
         for (size_t j = i + 1; j < sz; j++) {
-            Solution n = cloneAndSwap(s, i, j, instance);
+            Solution n = s.swap(i, j, instance);
             if (bestN.maxLateness() > n.maxLateness()) {
                 bestN = std::move(n);
             }

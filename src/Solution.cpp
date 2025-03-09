@@ -15,8 +15,6 @@ using CandidateList  = std::list<const Job *>;
 using SelectFunction = std::function<CandidateList::iterator(CandidateList&)>;
 using IS             = Solution::InitialSolution;
 
-#define LATENESS_MIN (INT_MIN)
-
 Solution::Solution(std::vector<const Job *> jobs, const Instance& instance)
     : _jobSequence(jobs)
 {
@@ -27,7 +25,7 @@ void Solution::calculateLateness(const Instance& instance)
 {
     _completionTime = 0;
     _completionTimes.clear();
-    _maxLateness         = LATENESS_MIN;
+    _maxLateness         = INT_MIN;
     _maxLatenessJobLabel = -1;
 
     int lastFamily       = 0;
@@ -71,7 +69,7 @@ void Solution::sortMaxLateness(const Instance& instance)
 
     while (!candidates.empty()) {
         auto latestIt = candidates.begin();
-        maxLateness   = LATENESS_MIN;
+        maxLateness   = INT_MIN;
         latestSetup   = 0;
 
         for (auto it = candidates.begin(); it != candidates.end(); ++it) {
@@ -143,7 +141,7 @@ Solution Solution::generateInitialSolution(
 
     s._completionTime = 0;
     s._completionTimes.resize(instance.jobs().size());
-    s._maxLateness         = LATENESS_MIN;
+    s._maxLateness         = INT_MIN;
     s._maxLatenessJobLabel = 0;
     s._jobSequence.reserve(instance.jobs().size());
 
@@ -161,40 +159,22 @@ Solution Solution::generateInitialSolution(
     return s;
 }
 
-/**
- * Faz o cálculo do completion time considerando `job`como se estivesse sendo
- * inserido como o último job da sequência, sendo precedido por `prevJob`
- */
-void Solution::calculateCompletionTime(const Job *job, const Job *prevJob,
-                                       const Instance& instance)
-{
-    int delay;
-
-    delay = prevJob ? 0 : instance.s(prevJob->family(), job->family());
-    this->_completionTime += delay + job->processingTime();
-    this->_completionTimes[job->label() - 1] = this->_completionTime;
-}
-
-/**
- * Verifica a lateness de um job já inserido na sequência e atualiza a max
- * lateness caso necessário
- */
-void Solution::verifyMaxLateness(const Job& job)
-{
-    int lateness = this->_completionTimes[job.label() - 1] - job.dueDate();
-    if (lateness > this->_maxLateness) {
-        this->_maxLateness         = lateness;
-        this->_maxLatenessJobLabel = job.label();
-    }
-}
-
 void Solution::addJob(const Job& j, const Instance& instance)
 {
+    int delay;
+    int lateness;
+
+    delay = this->_jobSequence.empty()
+                ? 0
+                : instance.s(j.family(), this->_jobSequence.back()->family());
     this->_jobSequence.push_back(&j);
-    this->calculateCompletionTime(
-        &j, this->_jobSequence.empty() ? nullptr : this->_jobSequence.back(),
-        instance);
-    this->verifyMaxLateness(j);
+    this->_completionTime += delay + j.processingTime();
+    this->_completionTimes[j.label() - 1] = this->_completionTime;
+    lateness                              = this->_completionTime - j.dueDate();
+    if (lateness > this->_maxLateness) {
+        this->_maxLateness         = lateness;
+        this->_maxLatenessJobLabel = j.label();
+    }
 }
 
 int Solution::completionTime() const { return this->_completionTime; }
@@ -213,37 +193,24 @@ const std::vector<const Job *>& Solution::jobSequence() const
     return this->_jobSequence;
 }
 
-void Solution::swap(unsigned idxA, unsigned idxB, const Instance& instance)
+Solution Solution::swap(unsigned a, unsigned b, const Instance& instance)
 {
-    const Job *job, *prevJob;
-    unsigned minIdx;
-
-    std::swap(this->_jobSequence[idxA], this->_jobSequence[idxB]);
-
-    minIdx = std::min(idxA, idxB);
-    job    = this->_jobSequence[minIdx];
-    if (minIdx == 0) {
-        prevJob               = nullptr;
-        this->_completionTime = 0;
-    } else {
-        prevJob               = this->_jobSequence[minIdx - 1];
-        this->_completionTime = this->_completionTimes[prevJob->label() - 1];
-    }
-
-    unsigned i = minIdx;
-    while (true) {
-        this->calculateCompletionTime(job, prevJob, instance);
-        if (++i >= this->_jobSequence.size()) {
-            break;
+    Solution s;
+    s._completionTime = 0;
+    s._completionTimes.resize(this->_jobSequence.size());
+    s._maxLateness         = INT_MIN;
+    s._maxLatenessJobLabel = 0;
+    s._jobSequence.reserve(this->_jobSequence.size());
+    for (size_t i = 0; i < this->_jobSequence.size(); i++) {
+        if (i == a) {
+            s.addJob(*(this->_jobSequence[b]), instance);
+        } else if (i == b) {
+            s.addJob(*(this->_jobSequence[a]), instance);
+        } else {
+            s.addJob(*(this->_jobSequence[i]), instance);
         }
-        prevJob = job;
-        job     = this->_jobSequence[i];
     }
-
-    this->_maxLateness = LATENESS_MIN;
-    for (i = 0; i < this->_jobSequence.size(); i++) {
-        this->verifyMaxLateness(*this->_jobSequence[i]);
-    }
+    return s;
 }
 
 Solution Solution::pmxCrossover(const Solution& parent2, unsigned cut1,
