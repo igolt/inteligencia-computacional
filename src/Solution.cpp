@@ -133,7 +133,7 @@ void Solution::calculateCompletionTime(const Job *job, const Job *prevJob,
 {
     int delay;
 
-    delay = prevJob ? 0 : instance.s(prevJob->family(), job->family());
+    delay = !prevJob ? 0 : instance.s(prevJob->family(), job->family());
     this->_completionTime += delay + job->processingTime();
     this->_completionTimes[job->label() - 1] = this->_completionTime;
 }
