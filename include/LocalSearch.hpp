@@ -6,9 +6,9 @@
 class LocalSearch {
 private:
     long long _executionTimeMS;
-    Solution bestNeighbor(Solution& s, const Instance& instance);
 
 public:
+    static Solution bestNeighbor(Solution& s, const Instance& instance);
     Solution run(Solution& initialSolution, unsigned timeLimit,
                  const Instance& instance, bool enableLogging);
     long long executionTimeMS() const;

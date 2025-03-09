@@ -1,6 +1,6 @@
 #include "GA.hpp"
-
 #include "Solution.hpp"
+#include "LocalSearch.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -99,6 +99,7 @@ void GA::mutation(Solution& child, double mutationRate, unsigned numJobs,
             j = dist(rng);
         }
         child.swap(i, j, instance);
+
     }
 }
 
@@ -110,7 +111,7 @@ Solution GA::bestSolution(const std::vector<Solution>& population)
                              });
 }
 
-Solution GA::run(unsigned popSize, int epochs, double mutationRate,
+Solution GA::run(unsigned popSize, int epochs, double mutationRate, bool localSearch,
                  const Instance& instance)
 {
 
@@ -131,6 +132,9 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate,
             Solution child =
                 crossover(population, parentA, parentBC, numJobs, instance);
             mutation(child, mutationRate, numJobs, instance);
+            if(localSearch){
+                LocalSearch::bestNeighbor(child, instance);
+            }
             nextPopulation.push_back(child);
         }
         population = nextPopulation;

@@ -23,7 +23,7 @@ private:
     Solution bestSolution(const std::vector<Solution>& population);
 
 public:
-    Solution run(unsigned popSize, int epochs, double mutationRate,
+    Solution run(unsigned popSize, int epochs, double mutationRate, bool localSearch,
                  const Instance& instance);
 };
 

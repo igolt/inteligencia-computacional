@@ -93,7 +93,7 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
     Solution solution = Solution::generateInitialSolution(instance, algo);
 
     GA ga;
-    ga.run(50, 100, 0.5, instance);
+    ga.run(50, 100, 0.9, false, instance);
     /*
     LocalSearch localSearch;
     Solution s = localSearch.run(solution, timeoutMS, instance, true);
