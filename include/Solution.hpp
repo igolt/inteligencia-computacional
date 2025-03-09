@@ -25,6 +25,10 @@ private:
     void sortEarliestDueDate(const Instance& instance);
     void sortMaxLateness(const Instance& instance);
     void calculateLateness(const Instance& instance);
+    void calculateCompletionTime(const Job *job, const Job *prevJob,
+                                 const Instance& instance);
+
+    void verifyMaxLateness(const Job& job);
 
 public:
     Solution() {}
@@ -33,7 +37,7 @@ public:
 
     static Solution generateInitialSolution(const Instance& instance,
                                             InitialSolution algo);
-    Solution swap(unsigned a, unsigned b, const Instance& instance);
+    void swap(unsigned a, unsigned b, const Instance& instance);
     int completionTime() const;
     const std::vector<int>& completionTimes() const;
     int maxLateness() const;
