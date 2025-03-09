@@ -5,7 +5,10 @@
 #include <algorithm>
 #include <climits>
 #include <functional>
+#include <iostream>
 #include <list>
+#include <random>
+#include <unordered_map>
 #include <vector>
 
 using CandidateList  = std::list<const Job *>;
@@ -88,6 +91,37 @@ void Solution::sortMaxLateness(const Instance& instance)
     _completionTime = accTime;
 }
 
+void Solution::sortRandomOrder(const Instance& instance)
+{
+    for (const auto& job : instance.jobs()) {
+        _jobSequence.push_back(&job);
+    }
+
+    std::random_device rd;
+    std::mt19937 g(rd());
+    std::shuffle(_jobSequence.begin(), _jobSequence.end(), g);
+
+    int accTime    = 0;
+    int lastFamily = -1;
+    _maxLateness   = INT_MIN;
+
+    for (const auto& job : _jobSequence) {
+        int setup =
+            (lastFamily > 0) ? instance.s(lastFamily, job->family()) : 0;
+        lastFamily = job->family();
+        accTime += setup + job->processingTime();
+        _completionTimes[job->label() - 1] = accTime;
+
+        int lateness                       = accTime - job->dueDate();
+        if (lateness > _maxLateness) {
+            _maxLateness         = lateness;
+            _maxLatenessJobLabel = job->label();
+        }
+    }
+
+    _completionTime = accTime;
+}
+
 Solution Solution::generateInitialSolution(
     const Instance& instance,
     Solution::InitialSolution initalSoluationAlgorithm)
@@ -106,6 +140,9 @@ Solution Solution::generateInitialSolution(
         break;
     case IS::ML:
         s.sortMaxLateness(instance);
+        break;
+    case IS::RAND:
+        s.sortRandomOrder(instance);
         break;
     }
     return s;
@@ -163,4 +200,53 @@ Solution Solution::swap(unsigned a, unsigned b, const Instance& instance)
         }
     }
     return s;
+}
+
+Solution Solution::pmxCrossover(const Solution& parent2, unsigned cut1,
+                                unsigned cut2, const Instance& instance)
+{
+    unsigned j = 0;
+
+    // Criando Solution
+    Solution child;
+    child._completionTime = 0;
+    child._completionTimes.resize(this->_jobSequence.size());
+    child._maxLateness         = INT_MIN;
+    child._maxLatenessJobLabel = 0;
+    child._jobSequence.reserve(this->_jobSequence.size());
+
+    // Criando vetor auxiliar
+    std::vector<const Job *> jobSequence;
+    jobSequence.resize(this->_jobSequence.size());
+
+    std::unordered_map<unsigned, unsigned> mapping;
+
+    for (unsigned i = cut1; i <= cut2; ++i) {
+        jobSequence[i] = this->_jobSequence[i];
+        mapping[this->_jobSequence[i]->label()] = i;
+    }
+
+    for (unsigned i = 0; i < jobSequence.size(); i++) {
+        if (!(i >= cut1 && i <= cut2)){
+            j = i;
+            while(mapping.find(parent2.jobSequence()[j]->label()) != mapping.end()){
+                j = mapping[parent2.jobSequence()[j]->label()];
+            }
+            jobSequence[i] = parent2.jobSequence()[j];
+        }
+    }
+
+    for (const auto& job : jobSequence) {
+        child.addJob(*job, instance);
+    }
+
+    return child;
+}
+
+void Solution::printJobSequence() const
+{
+    for (const auto& job : _jobSequence) {
+        std::cout << job->label() << " ";
+    }
+    std::cout << std::endl;
 }

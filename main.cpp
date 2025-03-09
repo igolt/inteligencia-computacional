@@ -1,6 +1,7 @@
 #include "Instance.hpp"
 #include "LocalSearch.hpp"
 #include "Solution.hpp"
+#include "GA.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -48,6 +49,7 @@ int main(int argc, const char *argv[])
         std::cerr << progName << ": " << e.what() << '\n';
         return 2;
     }
+
     return 0;
 }
 
@@ -70,6 +72,8 @@ Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
         return Solution::InitialSolution::EDD;
     } else if (!strcmp(algoName, "ML")) {
         return Solution::InitialSolution::ML;
+    }  else if (!strcmp(algoName, "RAND")) {
+        return Solution::InitialSolution::RAND;
     }
     throw std::invalid_argument(
         std::string("invalid initial solution algorithm name '") + algoName +
@@ -83,12 +87,15 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
     Instance instance              = Instance::fromFile(fileName);
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
     Solution solution = Solution::generateInitialSolution(instance, algo);
-
+    GA ga;
+    ga.run(50, 100, 0.5, instance);
+    /*
     LocalSearch localSearch;
     Solution s = localSearch.run(solution, timeoutMS, instance, true);
     std::cout << "Execution Time: " << localSearch.executionTimeMS()
               << " milliseconds\n";
-    return s;
+    */
+    return solution;
 }
 
 static void benchmark(const char *algoName, const char **fileList, int listSize)
