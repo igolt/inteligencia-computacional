@@ -1,7 +1,7 @@
-#include "Instance.hpp"
-#include "LocalSearch.hpp"
-#include "Solution.hpp"
 #include "GA.hpp"
+#include "Instance.hpp"
+#include "SimulatedAnnealing.hpp"
+#include "Solution.hpp"
 
 #include <cctype>
 #include <cstdio>
@@ -13,6 +13,8 @@
 #include <string>
 
 #define DEFAULT_TIMEOUT 1000u
+
+#define UNUSED(var) ((void) var)
 
 inline unsigned timeoutMSFromArgs(int argc, const char *argv[]);
 
@@ -72,7 +74,7 @@ Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
         return Solution::InitialSolution::EDD;
     } else if (!strcmp(algoName, "ML")) {
         return Solution::InitialSolution::ML;
-    }  else if (!strcmp(algoName, "RAND")) {
+    } else if (!strcmp(algoName, "RAND")) {
         return Solution::InitialSolution::RAND;
     }
     throw std::invalid_argument(
@@ -84,9 +86,12 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
                                                 const char *algoName,
                                                 unsigned timeoutMS)
 {
+    UNUSED(timeoutMS);
+
     Instance instance              = Instance::fromFile(fileName);
     Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
     Solution solution = Solution::generateInitialSolution(instance, algo);
+
     GA ga;
     ga.run(50, 100, 0.5, instance);
     /*
@@ -113,7 +118,8 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
            "Index;Initial Lateness;Final Lateness;Jobs order;Jobs "
            "families;Jobs Processing Time;Execution Time\n";
 
-    LocalSearch algorithm;
+    // TODO (paulo-rozatto): polimorfismo de algoritmos
+    SimulatedAnnealing algorithm;
     for (int i = 0; i < listSize; i++) {
         Instance instance              = Instance::fromFile(fileList[i]);
         Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);

@@ -12,7 +12,7 @@ public:
     enum class InitialSolution {
         EDD, // Earliest Due Date
         ML,
-        RAND,  // Maximum Lateness
+        RAND, // Maximum Lateness
     };
 
 private:
@@ -26,8 +26,13 @@ private:
     void sortEarliestDueDate(const Instance& instance);
     void sortMaxLateness(const Instance& instance);
     void sortRandomOrder(const Instance& instance);
+    void calculateLateness(const Instance& instance);
 
 public:
+    Solution() {}
+
+    Solution(std::vector<const Job *> jobs, const Instance& instance);
+
     static Solution generateInitialSolution(const Instance& instance,
                                             InitialSolution algo);
     Solution swap(unsigned a, unsigned b, const Instance& instance);
@@ -37,7 +42,8 @@ public:
     int maxLatenessJobLabel() const;
     const std::vector<const Job *>& jobSequence() const;
     void printJobSequence() const;
-    Solution pmxCrossover(const Solution& parent2, unsigned cut1, unsigned cut2, const Instance& instance);
+    Solution pmxCrossover(const Solution& parent2, unsigned cut1, unsigned cut2,
+                          const Instance& instance);
 };
 
 #endif /* SOLUTION_HPP */
