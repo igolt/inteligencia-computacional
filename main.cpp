@@ -99,7 +99,7 @@ static Solution avaliateSolutionForInstanceFile(const char *fileName,
 static void benchmark(const char *algoName, const char **fileList, int listSize)
 {
     std::ofstream csv;
-    csv.open("output.csv");
+    csv.open("results/sa3.csv");
 
     if (!csv.is_open()) {
         std::cerr << "Failed to open file 'output.csv'." << std::endl;
@@ -127,6 +127,8 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
 
         Solution finalSolution =
             algorithm.run(initialSolution, 1000, instance, false);
+        std::cout << "Execution Time: " << algorithm.executionTimeMS()
+                  << " milliseconds\n";
 
         csv << initialSolution.maxLateness() << ";";
         csv << finalSolution.maxLateness() << ";";
