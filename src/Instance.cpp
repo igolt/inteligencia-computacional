@@ -61,9 +61,9 @@ Instance::calculateMaxLateness(const std::vector<const Job *>& jobs,
     int maxLateness = INT_MIN;
     int lastFamily  = 0;
     int setup, lateness;
-    int latestJobIndex;
+    int latestJobIndex = 0;
 
-    int i = 0;
+    int i              = 0;
     for (const auto& job : jobs) {
         setup = instance.s(lastFamily, job->family());
         currentTime += job->processingTime() + setup;

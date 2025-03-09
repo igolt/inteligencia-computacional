@@ -233,14 +233,15 @@ Solution Solution::pmxCrossover(const Solution& parent2, unsigned cut1,
     std::unordered_map<unsigned, unsigned> mapping;
 
     for (unsigned i = cut1; i <= cut2; ++i) {
-        jobSequence[i] = this->_jobSequence[i];
+        jobSequence[i]                          = this->_jobSequence[i];
         mapping[this->_jobSequence[i]->label()] = i;
     }
 
     for (unsigned i = 0; i < jobSequence.size(); i++) {
-        if (!(i >= cut1 && i <= cut2)){
+        if (!(i >= cut1 && i <= cut2)) {
             j = i;
-            while(mapping.find(parent2.jobSequence()[j]->label()) != mapping.end()){
+            while (mapping.find(parent2.jobSequence()[j]->label()) !=
+                   mapping.end()) {
                 j = mapping[parent2.jobSequence()[j]->label()];
             }
             jobSequence[i] = parent2.jobSequence()[j];

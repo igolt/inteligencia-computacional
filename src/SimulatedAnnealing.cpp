@@ -14,6 +14,7 @@
 #include <vector>
 
 #define MAX_RAND_ATTEMPTS 1000
+#define MAX_SHAKE_ATTEMPTS 200
 
 bool badSwap(int i, int j, int maxJobIndex, std::vector<const Job *>& reduced)
 {
@@ -86,16 +87,18 @@ Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
     int latestJobIndex     = pair.first;
     int bestMaxLateness    = pair.second;
     int currentMaxLateness = pair.second;
-    double temperature     = 10000;
+    double temperature     = 50000;
 
     std::random_device rd;
     std::mt19937 gen(rd());
 
     bool timeout = false;
 
+    int meanL = 0, count = 0;
+    int bestSolutionIteration = 0;
     while (temperature > minTemperature && latestJobIndex > 0 && !timeout) {
-
-        for (int k = 0; k < 100; k++) {
+        int l;
+        for (l = 0; l < MAX_SHAKE_ATTEMPTS; l++) {
 
             std::uniform_int_distribution<size_t> dist(0, latestJobIndex);
             size_t i         = dist(gen);
@@ -130,17 +133,24 @@ Solution SimulatedAnnealing::run(Solution& initialSolution, unsigned timeLimit,
             }
 
             if (currentMaxLateness < bestMaxLateness) {
-                bestMaxLateness = currentMaxLateness;
+                bestMaxLateness       = currentMaxLateness;
+                bestSolutionIteration = count;
                 copy(reduced, best);
                 break;
             }
         }
+        ++count;
+        meanL += l;
 
         temperature *= 0.99;
         timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
                       std::chrono::steady_clock::now() - start)
                       .count() >= timeLimit;
     }
+    meanL = count > 0 ? meanL / (float) count : 0;
+    std::cout << "Mean l: " << meanL << std::endl
+              << "Best solution it: " << bestSolutionIteration << std::endl
+              << "Total its: " << count << std::endl;
 
     this->_executionTimeMS =
         std::chrono::duration_cast<std::chrono::milliseconds>(

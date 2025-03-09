@@ -1,5 +1,5 @@
 CXX := g++
-CXXFLAGS := -Wall -Wextra -std=c++11 -Iinclude
+CXXFLAGS := -Wall -Wextra -std=c++11 -Iinclude -O2
 EXEC := main
 MAIN := $(EXEC).cpp
 

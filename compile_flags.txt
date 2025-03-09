@@ -2,3 +2,4 @@
 ./include
 -Wall
 -Wextra
+-O2
