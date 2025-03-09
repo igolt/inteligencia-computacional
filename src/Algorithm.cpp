@@ -1,50 +1,58 @@
 #include "Algorithm.hpp"
+
 #include "Solution.hpp"
+
+#include <chrono>
 #include <iostream>
 #include <vector>
-#include <chrono>
 
-long long Algorithm::executionTime() const {return this->_executionTime;};
+long long Algorithm::executionTime() const { return this->_executionTime; };
 
-Solution Algorithm::bestNeighbor(Solution& s, const Instance& instance) {
-    unsigned sz = s.jobSequence().size();
-    Solution best_n = s.swap(0, 1, instance);
+Solution Algorithm::bestNeighbor(Solution& s, const Instance& instance)
+{
+    unsigned sz    = s.jobSequence().size();
+    Solution bestN = s.swap(0, 1, instance);
 
     for (size_t i = 0; i < sz - 1; i++) {
         for (size_t j = i + 1; j < sz; j++) {
             Solution n = s.swap(i, j, instance);
-            if (best_n.maxLateness() > n.maxLateness()) {
-                best_n = std::move(n);
+            if (bestN.maxLateness() > n.maxLateness()) {
+                bestN = std::move(n);
             }
         }
     }
-    return best_n;
+    return bestN;
 }
 
-Solution Algorithm::run(Solution& initialSolution, unsigned timeLimit, const Instance& instance, bool enableLogging)
+Solution Algorithm::run(Solution& initialSolution, unsigned timeLimit,
+                        const Instance& instance, bool enableLogging)
 {
-    bool improve = true;
-    bool timeout = false;
-    Solution best_s = initialSolution;
-    Solution best_n;
+    bool improve   = true;
+    bool timeout   = false;
+    Solution bestS = initialSolution;
+    Solution bestN;
     auto start = std::chrono::steady_clock::now();
-    while(improve && !timeout) {
-        if(enableLogging)
-            std::cout << "Max Lateness: " << best_s.maxLateness() << "\n";
+    while (improve && !timeout) {
+        if (enableLogging)
+            std::cout << "Max Lateness: " << bestS.maxLateness() << "\n";
         improve = false;
-        best_n = bestNeighbor(best_s, instance);
-        if (best_s.maxLateness() > best_n.maxLateness()) {
-            best_s = best_n;
+        bestN   = bestNeighbor(bestS, instance);
+        if (bestS.maxLateness() > bestN.maxLateness()) {
+            bestS   = bestN;
             improve = true;
         }
-        timeout = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count() >= timeLimit;
-        if(timeout && enableLogging)
+        timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - start)
+                      .count() >= timeLimit;
+        if (timeout && enableLogging)
             std::cout << "Timeout!" << "\n";
-        
     }
-    this->_executionTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start).count();
+    this->_executionTime =
+        std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start)
+            .count();
     if (enableLogging) {
         std::cout << "Execution Time: " << _executionTime << " milliseconds\n";
     }
-    return best_s;
+    return bestS;
 };

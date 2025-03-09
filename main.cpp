@@ -86,7 +86,8 @@ static void benchmark(const char *algoName, const char **fileList, int listSize)
 
     csv << "File;Number of jobs;Numer of families;Setup Class;Setup "
            "Times;Distance "
-           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs families;Jobs Processing Time;Execution Time\n";
+           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs "
+           "families;Jobs Processing Time;Execution Time\n";
 
     Algorithm algorithm;
     for (int i = 0; i < listSize; i++) {

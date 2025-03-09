@@ -123,17 +123,18 @@ const std::vector<const Job *>& Solution::jobSequence() const
     return this->_jobSequence;
 }
 
-Solution Solution::swap(unsigned a, unsigned b, const Instance& instance){
+Solution Solution::swap(unsigned a, unsigned b, const Instance& instance)
+{
     Solution s;
     s._completionTime = 0;
     s._completionTimes.resize(this->_jobSequence.size());
     s._maxLateness         = INT_MIN;
     s._maxLatenessJobLabel = 0;
     s._jobSequence.reserve(this->_jobSequence.size());
-    for(size_t i = 0; i < this->_jobSequence.size(); i++){
-        if(i == a){
+    for (size_t i = 0; i < this->_jobSequence.size(); i++) {
+        if (i == a) {
             s.addJob(*(this->_jobSequence[b]), instance);
-        } else if(i == b) {
+        } else if (i == b) {
             s.addJob(*(this->_jobSequence[a]), instance);
         } else {
             s.addJob(*(this->_jobSequence[i]), instance);
