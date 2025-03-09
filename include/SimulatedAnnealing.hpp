@@ -2,6 +2,7 @@
 #define SIMULATED_ANNEALING_HPP
 
 #include "Solution.hpp"
+
 // TODO (paulo-rozatto): polimorfismo de algoritmos
 class SimulatedAnnealing {
 private:

@@ -1,5 +1,4 @@
 #include "Instance.hpp"
-#include "LocalSearch.hpp"
 #include "SimulatedAnnealing.hpp"
 #include "Solution.hpp"
 

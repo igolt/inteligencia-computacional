@@ -22,8 +22,9 @@ private:
 public:
     static Instance fromFile(const std::string& fileName);
     static Instance fromFile(std::istream& is);
-    static std::pair<int, int> calculateMaxLateness(const std::vector<const Job *>& jobs,
-                                    const Instance& instance);
+    static std::pair<int, int>
+    calculateMaxLateness(const std::vector<const Job *>& jobs,
+                         const Instance& instance);
 
     const JobList& jobs() const;
 
