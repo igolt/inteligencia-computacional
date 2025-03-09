@@ -15,12 +15,16 @@ private:
     void selection(std::vector<Solution>& population, unsigned& parentA,
                    unsigned& parentBC, unsigned top25, unsigned popSize);
     void defineCuts(unsigned& cut1, unsigned& cut2, unsigned numJobs);
-    Solution crossover(std::vector<Solution>& population, unsigned parentA, unsigned parentBC, unsigned numJobs, const Instance& instance);
-    void mutation(Solution& child, double mutationRate, unsigned numJobs);
+    Solution crossover(std::vector<Solution>& population, unsigned parentA,
+                       unsigned parentBC, unsigned numJobs,
+                       const Instance& instance);
+    void mutation(Solution& child, double mutationRate, unsigned numJobs,
+                  const Instance& instance);
     Solution bestSolution(const std::vector<Solution>& population);
 
 public:
-    Solution run(unsigned popSize, int epochs, double mutationRate, const Instance& instance);
+    Solution run(unsigned popSize, int epochs, double mutationRate,
+                 const Instance& instance);
 };
 
 #endif /* GA_HPP */

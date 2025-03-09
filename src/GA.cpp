@@ -1,9 +1,10 @@
 #include "GA.hpp"
+
 #include "Solution.hpp"
 
 #include <algorithm>
-#include <random>
 #include <iostream>
+#include <random>
 
 void GA::initialPopulation(int popSize, std::vector<Solution>& population,
                            const Instance& instance)
@@ -55,8 +56,8 @@ int GA::rouletteSelection(const std::vector<Solution>& population, int start,
     return start;
 }
 
-void GA::selection(std::vector<Solution>& population, unsigned& parentA, unsigned& parentBC, unsigned top25,
-                   unsigned popSize)
+void GA::selection(std::vector<Solution>& population, unsigned& parentA,
+                   unsigned& parentBC, unsigned top25, unsigned popSize)
 {
     parentA  = rouletteSelection(population, 0, top25);
     parentBC = rouletteSelection(population, top25, popSize);
@@ -73,38 +74,46 @@ void GA::defineCuts(unsigned& cut1, unsigned& cut2, unsigned numJobs)
         std::swap(cut1, cut2);
 }
 
-Solution GA::crossover(std::vector<Solution>& population, unsigned parentA, unsigned parentBC, unsigned numJobs, const Instance& instance){
-    unsigned cut1     = 0;
-    unsigned cut2     = 0;
+Solution GA::crossover(std::vector<Solution>& population, unsigned parentA,
+                       unsigned parentBC, unsigned numJobs,
+                       const Instance& instance)
+{
+    unsigned cut1 = 0;
+    unsigned cut2 = 0;
     defineCuts(cut1, cut2, numJobs);
-    return population[parentA].pmxCrossover(
-                population[parentBC], cut1, cut2, instance);
+    return population[parentA].pmxCrossover(population[parentBC], cut1, cut2,
+                                            instance);
 }
 
-void GA::mutation(Solution& child, double mutationRate, unsigned numJobs){
+void GA::mutation(Solution& child, double mutationRate, unsigned numJobs,
+                  const Instance& instance)
+{
     static std::mt19937 rng(std::random_device{}());
     std::uniform_real_distribution<double> prob(0.0, 1.0);
     std::uniform_int_distribution<unsigned> dist(0, numJobs - 1);
-    
+
     if (prob(rng) < mutationRate) {
         unsigned i = dist(rng);
         unsigned j = dist(rng);
         while (i == j) {
             j = dist(rng);
         }
-        // COLOCAR SWAP AQUI
+        child.swap(i, j, instance);
     }
 }
 
-Solution GA::bestSolution(const std::vector<Solution>& population) {
-    return *std::min_element(population.begin(), population.end(), [](const Solution& a, const Solution& b) {
-        return a.maxLateness() < b.maxLateness();
-    });
+Solution GA::bestSolution(const std::vector<Solution>& population)
+{
+    return *std::min_element(population.begin(), population.end(),
+                             [](const Solution& a, const Solution& b) {
+                                 return a.maxLateness() < b.maxLateness();
+                             });
 }
 
-Solution GA::run(unsigned popSize, int epochs, double mutationRate, const Instance& instance)
+Solution GA::run(unsigned popSize, int epochs, double mutationRate,
+                 const Instance& instance)
 {
-    
+
     std::vector<Solution> population;
     std::vector<Solution> nextPopulation;
     unsigned numJobs  = instance.jobs().size();
@@ -119,8 +128,9 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate, const Instan
         survival(popSize, population, nextPopulation);
         while (nextPopulation.size() < popSize) {
             selection(population, parentA, parentBC, top25, popSize);
-            Solution child = crossover(population, parentA, parentBC, numJobs, instance);
-            mutation(child, mutationRate, numJobs);
+            Solution child =
+                crossover(population, parentA, parentBC, numJobs, instance);
+            mutation(child, mutationRate, numJobs, instance);
             nextPopulation.push_back(child);
         }
         population = nextPopulation;
