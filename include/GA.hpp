@@ -22,9 +22,14 @@ private:
                   const Instance& instance);
     Solution bestSolution(const std::vector<Solution>& population);
 
+    std::vector<double> _executionTimes;
+    std::vector<int> _maxLatenesses;
+
 public:
     Solution run(unsigned popSize, int epochs, double mutationRate, bool localSearch,
                  const Instance& instance);
+    std::vector<double> executionTimes();
+    std::vector<int> maxLatenesses();
 };
 
 #endif /* GA_HPP */

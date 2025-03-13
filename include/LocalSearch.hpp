@@ -9,6 +9,7 @@ private:
 
 public:
     static Solution bestNeighbor(Solution& s, const Instance& instance);
+    static void firstBetter(Solution& s, const Instance& instance);
     Solution run(Solution& initialSolution, unsigned timeLimit,
                  const Instance& instance, bool enableLogging);
     long long executionTimeMS() const;

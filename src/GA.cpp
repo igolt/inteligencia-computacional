@@ -1,8 +1,10 @@
 #include "GA.hpp"
-#include "Solution.hpp"
+
 #include "LocalSearch.hpp"
+#include "Solution.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <iostream>
 #include <random>
 
@@ -99,7 +101,6 @@ void GA::mutation(Solution& child, double mutationRate, unsigned numJobs,
             j = dist(rng);
         }
         child.swap(i, j, instance);
-
     }
 }
 
@@ -111,10 +112,9 @@ Solution GA::bestSolution(const std::vector<Solution>& population)
                              });
 }
 
-Solution GA::run(unsigned popSize, int epochs, double mutationRate, bool localSearch,
-                 const Instance& instance)
+Solution GA::run(unsigned popSize, int epochs, double mutationRate,
+                 bool localSearch, const Instance& instance)
 {
-
     std::vector<Solution> population;
     std::vector<Solution> nextPopulation;
     unsigned numJobs  = instance.jobs().size();
@@ -122,9 +122,14 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate, bool localSe
     unsigned parentA  = 0;
     unsigned parentBC = 0;
 
+    _executionTimes.clear(); // Limpa os dados antes de executar
+    _maxLatenesses.clear();
+
     initialPopulation(popSize, population, instance);
 
     for (int epoch = 0; epoch < epochs; epoch++) {
+        auto start = std::chrono::high_resolution_clock::now();
+
         nextPopulation.clear();
         survival(popSize, population, nextPopulation);
         while (nextPopulation.size() < popSize) {
@@ -132,13 +137,27 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate, bool localSe
             Solution child =
                 crossover(population, parentA, parentBC, numJobs, instance);
             mutation(child, mutationRate, numJobs, instance);
-            if(localSearch){
-                LocalSearch::bestNeighbor(child, instance);
+            if (localSearch) {
+                LocalSearch::firstBetter(child, instance);
             }
             nextPopulation.push_back(child);
         }
         population = nextPopulation;
-        std::cout << bestSolution(population).maxLateness() << "\n";
+
+        auto end   = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+
+        int maxLateness = bestSolution(population).maxLateness();
+        std::cout << maxLateness << "\n";
+
+        _executionTimes.push_back(
+            elapsed.count());                  // Armazena o tempo de execução
+        _maxLatenesses.push_back(maxLateness); // Armazena o maxLateness
     }
+
     return bestSolution(population);
 }
+
+std::vector<double> GA::executionTimes() { return _executionTimes; }
+
+std::vector<int> GA::maxLatenesses() { return _maxLatenesses; }
