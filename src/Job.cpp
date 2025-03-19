@@ -1,5 +1,6 @@
 #include "Job.hpp"
 
+#include <sstream>
 #include <stdexcept>
 
 Job::Job(int label, int family, int dueDate, int processingTime)
@@ -36,8 +37,12 @@ Job& Job::setFamily(int family)
 
 Job& Job::setDueDate(int dueDate)
 {
-    if (dueDate <= 0) {
-        throw std::invalid_argument("due date should be greater than 0");
+    if (dueDate < 0) {
+        std::stringstream strstream;
+
+        strstream << "due date should be greater than 0 (got " << dueDate
+                  << ")";
+        throw std::invalid_argument(strstream.str());
     }
     this->_dueDate = dueDate;
     return *this;

@@ -35,21 +35,21 @@ Solution LocalSearch::bestNeighbor(Solution& s, const Instance& instance)
     return bestN;
 }
 
-void LocalSearch::firstBetter(Solution& s, const Instance& instance){
-    unsigned sz    = s.jobSequence().size();
-    bool done = false;
+void LocalSearch::firstBetter(Solution& s, const Instance& instance)
+{
+    unsigned sz = s.jobSequence().size();
+    bool done   = false;
 
-    for (size_t i = 0; i < sz - 1 || !done; i++) {
-        for (size_t j = i + 1; j < sz || !done; j++) {
+    for (size_t i = 0; i < sz - 1 && !done; i++) {
+        for (size_t j = i + 1; j < sz && !done; j++) {
             Solution n = cloneAndSwap(s, i, j, instance);
             if (s.maxLateness() > n.maxLateness()) {
-                s = std::move(n);
+                s    = std::move(n);
                 done = true;
             }
         }
     }
 }
-
 
 Solution LocalSearch::run(Solution& initialSolution, unsigned timeLimit,
                           const Instance& instance, bool enableLogging)

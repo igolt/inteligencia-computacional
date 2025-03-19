@@ -24,12 +24,15 @@ private:
 
     std::vector<double> _executionTimes;
     std::vector<int> _maxLatenesses;
+    long long _executionTime;
 
 public:
-    Solution run(unsigned popSize, int epochs, double mutationRate, bool localSearch,
-                 const Instance& instance);
+    Solution run(unsigned popSize, int epochs, double mutationRate,
+                 bool localSearch, const Instance& instance);
     std::vector<double> executionTimes();
     std::vector<int> maxLatenesses();
+
+    inline long long executionTimeMS() const { return this->_executionTime; }
 };
 
 #endif /* GA_HPP */

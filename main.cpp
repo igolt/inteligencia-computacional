@@ -1,161 +1,68 @@
 #include "GA.hpp"
 #include "Instance.hpp"
+#include "LocalSearch.hpp"
 #include "SimulatedAnnealing.hpp"
 #include "Solution.hpp"
 
-#include <cctype>
-#include <cstdio>
-#include <cstring>
-#include <exception>
 #include <fstream>
 #include <iostream>
-#include <stdexcept>
-#include <string>
 
-#define DEFAULT_TIMEOUT 1000u
-
-#define UNUSED(var) ((void) var)
-
-inline unsigned timeoutMSFromArgs(int argc, const char *argv[]);
-
-Solution::InitialSolution getInitalSolutionAlgo(const char *algoName);
-
-static Solution avaliateSolutionForInstanceFile(const char *fileName,
-                                                const char *algoName,
-                                                unsigned timoeutMS);
-
-static void benchmark(const char *algoName, const char **fileList,
-                      int listSize);
-
-int main(int argc, const char *argv[])
+inline std::ostream& operator<<(std::ostream& o, const Solution& s)
 {
-    const char *progName = argv[0];
+    s.printJobSequence(o);
+    return o;
+}
 
-    if (argc < 4) {
-        std::cerr << "usage: " << progName
-                  << " INITIAL_SOLUTION_ALGO TIMEOUT_MS FILE[S]\n";
+int main(int argc, char *argv[])
+{
+    std::ofstream csv;
+
+    csv.open("benchmark.csv");
+
+    if (!csv.is_open()) {
+        std::cerr << "falha ao abrir o arquivo CSV\n";
         return 1;
     }
 
-    const char *initalSolutionAlgorithm = argv[1];
-    unsigned int timeoutMS              = timeoutMSFromArgs(argc, argv);
-
-    try {
-        if (argc == 4) {
-            avaliateSolutionForInstanceFile(argv[3], initalSolutionAlgorithm,
-                                            timeoutMS);
-        } else {
-            benchmark(argv[1], &argv[3], argc - 3);
-        }
-    } catch (std::exception& e) {
-        std::cerr << progName << ": " << e.what() << '\n';
-        return 2;
-    }
-
-    return 0;
-}
-
-inline unsigned timeoutMSFromArgs(int argc, const char *argv[])
-{
-    if (argc >= 4) {
-        try {
-            return std::stoul(argv[2]);
-        } catch (std::exception& _) {
-            std::cerr << "invalid value for timeout: " << argv[2] << '\n';
-            std::cerr << "defaulting to " << DEFAULT_TIMEOUT << '\n';
-        }
-    }
-    return DEFAULT_TIMEOUT;
-}
-
-Solution::InitialSolution getInitalSolutionAlgo(const char *algoName)
-{
-    if (!strcmp(algoName, "EDD")) {
-        return Solution::InitialSolution::EDD;
-    } else if (!strcmp(algoName, "ML")) {
-        return Solution::InitialSolution::ML;
-    } else if (!strcmp(algoName, "RAND")) {
-        return Solution::InitialSolution::RAND;
-    }
-    throw std::invalid_argument(
-        std::string("invalid initial solution algorithm name '") + algoName +
-        "'");
-}
-
-static Solution avaliateSolutionForInstanceFile(const char *fileName,
-                                                const char *algoName,
-                                                unsigned timeoutMS)
-{
-    UNUSED(timeoutMS);
-
-    Instance instance              = Instance::fromFile(fileName);
-    Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
-    Solution solution = Solution::generateInitialSolution(instance, algo);
+    csv << "Instance;EDD;EDD + LS Lmax;EDD + LS Order;GA Lmax;GA Imp (%);GA "
+           "Order;GA Time (ms);SA "
+           "Lmax;SA Imp (%);SA Order;SA Time "
+           "(ms)\n";
 
     GA ga;
-    ga.run(50, 100, 0.9, false, instance);
-    /*
-    LocalSearch localSearch;
-    Solution s = localSearch.run(solution, timeoutMS, instance, true);
-    std::cout << "Execution Time: " << localSearch.executionTimeMS()
-              << " milliseconds\n";
-    */
-    return solution;
-}
+    SimulatedAnnealing sa;
+    LocalSearch ls;
+    for (int i = 1; i < argc; i++) {
+        const char *fileName = argv[i];
 
-static void benchmark(const char *algoName, const char **fileList, int listSize)
-{
-    std::ofstream csv;
-    csv.open("output.csv");
+        std::cout << "rodando para: " << fileName << "...\n";
 
-    if (!csv.is_open()) {
-        std::cerr << "Failed to open file 'output.csv'." << std::endl;
-        return;
+        auto instance   = Instance::fromFile(fileName);
+        Solution eddSol = Solution::generateInitialSolution(
+            instance, Solution::InitialSolution::EDD);
+        auto eddLsSol = ls.run(eddSol, 10000, instance, false);
+
+        auto gaSol    = ga.run(100, 100, 0.01, false, instance);
+        auto saSol    = sa.run(eddLsSol, 1000, instance, false);
+
+        double eddLsSolLateness =
+            eddLsSol.maxLateness() == 0 ? 1 : eddLsSol.maxLateness();
+
+        double gaImp = ((eddLsSol.maxLateness() - gaSol.maxLateness()) /
+                        eddLsSolLateness) *
+                       100;
+        double saImp = ((eddLsSol.maxLateness() - saSol.maxLateness()) /
+                        eddLsSolLateness) *
+                       100;
+
+        std::cout << "GA IMP: " << gaImp << "\n";
+        std::cout << "SA IMP: " << saImp << "\n";
+
+        csv << fileName << ";" << eddSol.maxLateness() << ";"
+            << eddLsSol.maxLateness() << ";" << eddLsSol << ";"
+            << gaSol.maxLateness() << ";" << gaImp << ';' << gaSol << ';'
+            << ga.executionTimeMS() << ";" << saSol.maxLateness() << ";"
+            << saImp << ';' << saSol << ';' << sa.executionTimeMS() << '\n';
     }
-
-    csv << "File;Number of jobs;Numer of families;Setup Class;Setup "
-           "Times;Distance "
-           "Index;Initial Lateness;Final Lateness;Jobs order;Jobs "
-           "families;Jobs Processing Time;Execution Time\n";
-
-    // TODO (paulo-rozatto): polimorfismo de algoritmos
-    SimulatedAnnealing algorithm;
-    for (int i = 0; i < listSize; i++) {
-        Instance instance              = Instance::fromFile(fileList[i]);
-        Solution::InitialSolution algo = getInitalSolutionAlgo(algoName);
-        Solution initialSolution =
-            Solution::generateInitialSolution(instance, algo);
-
-        std::cout << i + 1 << "/" << listSize << ": " << fileList[i]
-                  << std::endl;
-
-        csv << fileList[i] << ";";
-        instance.toCsv(csv);
-
-        Solution finalSolution =
-            algorithm.run(initialSolution, 1000, instance, false);
-
-        csv << initialSolution.maxLateness() << ";";
-        csv << finalSolution.maxLateness() << ";";
-
-        csv << "[";
-        for (const Job *j : finalSolution.jobSequence()) {
-            csv << j->label() << ',';
-        }
-        csv << "];";
-
-        csv << "[";
-        for (const Job *j : finalSolution.jobSequence()) {
-            csv << j->family() << ',';
-        }
-        csv << "];";
-
-        csv << "[";
-        for (const Job *j : finalSolution.jobSequence()) {
-            csv << j->processingTime() << ',';
-        }
-        csv << "];" << algorithm.executionTimeMS() << "\n";
-    }
-
-    csv.close();
+    return 0;
 }

@@ -8,12 +8,25 @@
 #include <iostream>
 #include <random>
 
+Solution::InitialSolution initialSolutionAlgo[] = {
+    Solution::InitialSolution::EDD,  Solution::InitialSolution::EDD,
+    Solution::InitialSolution::ML,   Solution::InitialSolution::ML,
+    Solution::InitialSolution::RAND,
+};
+
 void GA::initialPopulation(int popSize, std::vector<Solution>& population,
                            const Instance& instance)
 {
-    for (int i = 0; i < popSize; ++i) {
+    population.reserve(popSize);
+
+    population.push_back(Solution::generateInitialSolution(
+        instance, Solution::InitialSolution::EDD));
+    population.push_back(Solution::generateInitialSolution(
+        instance, Solution::InitialSolution::ML));
+
+    for (int i = 2; i < popSize; ++i) {
         population.push_back(Solution::generateInitialSolution(
-            instance, Solution::InitialSolution::RAND));
+            instance, initialSolutionAlgo[i % 5]));
     }
 }
 
@@ -125,6 +138,7 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate,
     _executionTimes.clear(); // Limpa os dados antes de executar
     _maxLatenesses.clear();
 
+    auto algoStart = std::chrono::high_resolution_clock::now();
     initialPopulation(popSize, population, instance);
 
     for (int epoch = 0; epoch < epochs; epoch++) {
@@ -154,6 +168,10 @@ Solution GA::run(unsigned popSize, int epochs, double mutationRate,
             elapsed.count());                  // Armazena o tempo de execução
         _maxLatenesses.push_back(maxLateness); // Armazena o maxLateness
     }
+    auto algoEnd   = std::chrono::high_resolution_clock::now();
+    _executionTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         algoEnd - algoStart)
+                         .count();
 
     return bestSolution(population);
 }

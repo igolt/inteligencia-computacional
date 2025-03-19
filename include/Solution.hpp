@@ -45,7 +45,7 @@ public:
     int maxLateness() const;
     int maxLatenessJobLabel() const;
     const std::vector<const Job *>& jobSequence() const;
-    void printJobSequence() const;
+    void printJobSequence(std::ostream& out) const;
     Solution pmxCrossover(const Solution& parent2, unsigned cut1, unsigned cut2,
                           const Instance& instance);
 };
